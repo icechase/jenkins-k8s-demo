@@ -5,6 +5,33 @@ pipeline {
     }
 
     stages {
+        stage('Check Image Build Tools') {
+            steps {
+                sh '''
+                    echo "=== OS ==="
+                    cat /etc/os-release | head -n 5
+        
+                    echo "=== Available tools ==="
+                    for tool in docker buildctl buildah podman; do
+                        if command -v "$tool" >/dev/null 2>&1; then
+                            echo "$tool: available"
+                            "$tool" --version 2>/dev/null || true
+                        else
+                            echo "$tool: not installed"
+                        fi
+                    done
+        
+                    echo "=== BuildKit socket check ==="
+                    if [ -S /run/buildkit/buildkitd.sock ]; then
+                        echo "BuildKit socket found"
+                    else
+                        echo "BuildKit socket not found"
+                    fi
+                '''
+    }
+}
+
+        
         stage('1 - Checkout Verification') {
             steps {
                 echo '=== Git Checkout Verification ==='
