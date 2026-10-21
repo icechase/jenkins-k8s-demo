@@ -137,10 +137,6 @@ pipeline {
                 }
 
 
-                archiveArtifacts(
-                    artifacts: 'output/jenkins-k8s-demo.tar',
-                    fingerprint: true
-                )
             }
         }
     }
