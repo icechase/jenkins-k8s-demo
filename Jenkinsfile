@@ -1,4 +1,3 @@
-
 pipeline {
     agent {
         label 'jenkins-agent'
@@ -8,19 +7,15 @@ pipeline {
         stage('Check Image Build Tools') {
             steps {
                 sh '''
-                    echo "=== OS ==="
-                    cat /etc/os-release | head -n 5
-        
-                    echo "=== Available tools ==="
+                    echo "=== Available tools on normal agent ==="
                     for tool in docker buildctl buildah podman; do
                         if command -v "$tool" >/dev/null 2>&1; then
                             echo "$tool: available"
-                            "$tool" --version 2>/dev/null || true
                         else
                             echo "$tool: not installed"
                         fi
                     done
-        
+
                     echo "=== BuildKit socket check ==="
                     if [ -S /run/buildkit/buildkitd.sock ]; then
                         echo "BuildKit socket found"
@@ -28,10 +23,9 @@ pipeline {
                         echo "BuildKit socket not found"
                     fi
                 '''
-    }
-}
+            }
+        }
 
-        
         stage('1 - Checkout Verification') {
             steps {
                 echo '=== Git Checkout Verification ==='
@@ -60,7 +54,6 @@ pipeline {
                 echo '=== Read README ==='
 
                 sh '''
-                    echo "README content:"
                     cat README.md
                 '''
             }
@@ -79,6 +72,59 @@ pipeline {
 
                 archiveArtifacts(
                     artifacts: 'output/result.txt',
+                    fingerprint: true
+                )
+            }
+        }
+
+        stage('4 - Build OCI Image') {
+            agent {
+                kubernetes {
+                    cloud 'microk8s'
+                    label 'jenkins-buildkit-agent'
+                    defaultContainer 'jnlp'
+                }
+            }
+
+            steps {
+                echo '=== Checkout source on BuildKit agent ==='
+
+                checkout scm
+
+                echo '=== Build OCI image with BuildKit ==='
+
+                container('buildkit') {
+                    sh '''
+                        set -eu
+
+                        echo "=== BuildKit version ==="
+                        buildctl --version
+
+                        echo "=== Verify Dockerfile ==="
+                        test -f Dockerfile
+                        cat Dockerfile
+
+                        echo "=== Prepare output directory ==="
+                        mkdir -p output
+
+                        echo "=== Build OCI image ==="
+                        buildctl-daemonless.sh build \
+                            --progress=plain \
+                            --frontend dockerfile.v0 \
+                            --local context=. \
+                            --local dockerfile=. \
+                            --output type=oci,dest=output/jenkins-k8s-demo.tar
+
+                        echo "=== Verify build output ==="
+                        test -s output/jenkins-k8s-demo.tar
+                        ls -lh output/jenkins-k8s-demo.tar
+
+                        echo "OCI image build succeeded."
+                    '''
+                }
+
+                archiveArtifacts(
+                    artifacts: 'output/jenkins-k8s-demo.tar',
                     fingerprint: true
                 )
             }
