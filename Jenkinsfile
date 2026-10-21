@@ -93,35 +93,49 @@ pipeline {
 
                 echo '=== Build OCI image with BuildKit ==='
 
+                
                 container('buildkit') {
-                    sh '''
-                        set -eu
-
-                        echo "=== BuildKit version ==="
-                        buildctl --version
-
-                        echo "=== Verify Dockerfile ==="
-                        test -f Dockerfile
-                        cat Dockerfile
-
-                        echo "=== Prepare output directory ==="
-                        mkdir -p output
-
-                        echo "=== Build OCI image ==="
-                        buildctl-daemonless.sh build \
-                            --progress=plain \
-                            --frontend dockerfile.v0 \
-                            --local context=. \
-                            --local dockerfile=. \
-                            --output type=oci,dest=output/jenkins-k8s-demo.tar
-
-                        echo "=== Verify build output ==="
-                        test -s output/jenkins-k8s-demo.tar
-                        ls -lh output/jenkins-k8s-demo.tar
-
-                        echo "OCI image build succeeded."
-                    '''
+                    withCredentials([
+                        usernamePassword(
+                            credentialsId: 'ghcr-push-credentials',
+                            usernameVariable: 'GHCR_USER',
+                            passwordVariable: 'GHCR_TOKEN'
+                        )
+                    ]) {
+                        sh '''
+                            set +x
+                            set -eu
+                
+                            # Create a temporary Docker authentication directory
+                            export DOCKER_CONFIG="$(mktemp -d)"
+                            trap 'rm -rf "$DOCKER_CONFIG"' EXIT
+                
+                            # Create GHCR authentication data without printing the token
+                            AUTH="$(printf '%s' "$GHCR_USER:$GHCR_TOKEN" \
+                                | base64 | tr -d '\\n')"
+                
+                            printf '{"auths":{"ghcr.io":{"auth":"%s"}}}\\n' \
+                                "$AUTH" > "$DOCKER_CONFIG/config.json"
+                
+                            chmod 600 "$DOCKER_CONFIG/config.json"
+                
+                            # Verify BuildKit is available
+                            buildctl --version
+                            test -f Dockerfile
+                
+                            # Build the image and push it to GHCR
+                            buildctl-daemonless.sh build \
+                                --progress=plain \
+                                --frontend dockerfile.v0 \
+                                --local context=. \
+                                --local dockerfile=. \
+                                --output "type=image,name=ghcr.io/icechase/jenkins-k8s-demo:${BUILD_NUMBER},push=true"
+                
+                            echo "GHCR push command completed successfully."
+                        '''
+                    }
                 }
+
 
                 archiveArtifacts(
                     artifacts: 'output/jenkins-k8s-demo.tar',
