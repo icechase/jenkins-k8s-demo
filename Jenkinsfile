@@ -139,5 +139,46 @@ pipeline {
 
             }
         }
+
+        
+        stage('5 - Deploy to Kubernetes') {
+            agent {
+                kubernetes {
+                    cloud 'microk8s'
+                    label 'jenkins-deploy-agent'
+                    defaultContainer 'jnlp'
+                }
+            }
+
+            steps {
+                echo '=== Deploy image to Kubernetes ==='
+
+                container('kubectl') {
+                    sh '''
+                        set -eu
+
+                        IMAGE="ghcr.io/icechase/jenkins-k8s-demo:${BUILD_NUMBER}"
+
+                        echo "=== Target image ==="
+                        echo "$IMAGE"
+
+                        echo "=== Update Deployment image ==="
+                        kubectl set image \
+                            deployment/jenkins-k8s-demo \
+                            nginx="$IMAGE" \
+                            -n default
+
+                        echo "=== Wait for rollout ==="
+                        kubectl rollout status \
+                            deployment/jenkins-k8s-demo \
+                            -n default \
+                            --timeout=180s
+
+                        echo "Deployment completed successfully."
+                    '''
+                }
+            }
+        }
+
     }
 }
