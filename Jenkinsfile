@@ -141,6 +141,7 @@ pipeline {
         }
 
         
+        
         stage('5 - Deploy to Kubernetes') {
             agent {
                 kubernetes {
@@ -158,9 +159,16 @@ pipeline {
                         set -eu
 
                         IMAGE="ghcr.io/icechase/jenkins-k8s-demo:${BUILD_NUMBER}"
+                        CHANGE_CAUSE="Jenkins Build #${BUILD_NUMBER} deployed image ${IMAGE}"
 
                         echo "=== Target image ==="
                         echo "$IMAGE"
+
+                        echo "=== Record deployment cause ==="
+                        kubectl annotate deployment jenkins-k8s-demo \
+                            kubernetes.io/change-cause="$CHANGE_CAUSE" \
+                            -n default \
+                            --overwrite
 
                         echo "=== Update Deployment image ==="
                         kubectl set image \
@@ -174,11 +182,24 @@ pipeline {
                             -n default \
                             --timeout=180s
 
+                        echo "=== Verify deployed image ==="
+                        ACTUAL_IMAGE=$(kubectl get deployment jenkins-k8s-demo \
+                            -n default \
+                            -o jsonpath='{.spec.template.spec.containers[?(@.name=="nginx")].image}')
+
+                        echo "Actual image: $ACTUAL_IMAGE"
+
+                        if [ "$ACTUAL_IMAGE" != "$IMAGE" ]; then
+                            echo "ERROR: Deployed image does not match the expected image."
+                            exit 1
+                        fi
+
                         echo "Deployment completed successfully."
                     '''
                 }
             }
-        }
+            }
+
 
     }
 }
