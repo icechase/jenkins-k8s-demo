@@ -142,6 +142,7 @@ pipeline {
 
         
         
+
         stage('5 - Deploy to Kubernetes') {
             agent {
                 kubernetes {
@@ -155,50 +156,126 @@ pipeline {
                 echo '=== Deploy image to Kubernetes ==='
 
                 container('kubectl') {
-                    sh '''
-                        set -eu
+                    script {
+                        // 1. 记录部署前的镜像
+                        def previousImage = sh(
+                            script: '''
+                                set -eu
+                                kubectl get deployment jenkins-k8s-demo \
+                                    -n default \
+                                    -o jsonpath='{.spec.template.spec.containers[?(@.name=="nginx")].image}'
+                            ''',
+                            returnStdout: true
+                        ).trim()
 
-                        IMAGE="ghcr.io/icechase/jenkins-k8s-demo:${BUILD_NUMBER}"
-                        CHANGE_CAUSE="Jenkins Build #${BUILD_NUMBER} deployed image ${IMAGE}"
+                        def newImage = "ghcr.io/icechase/jenkins-k8s-demo:${env.BUILD_NUMBER}"
 
-                        echo "=== Target image ==="
-                        echo "$IMAGE"
+                        echo "Previous image: ${previousImage}"
+                        echo "New image: ${newImage}"
 
-                        echo "=== Record deployment cause ==="
-                        kubectl annotate deployment jenkins-k8s-demo \
-                            kubernetes.io/change-cause="$CHANGE_CAUSE" \
-                            -n default \
-                            --overwrite
+                        try {
+                            // 2. 部署、等待发布、验证镜像和 HTTP 页面
+                            sh """
+                                set -eu
 
-                        echo "=== Update Deployment image ==="
-                        kubectl set image \
-                            deployment/jenkins-k8s-demo \
-                            nginx="$IMAGE" \
-                            -n default
+                                CHANGE_CAUSE="Jenkins Build #${env.BUILD_NUMBER} deployed image ${newImage}"
 
-                        echo "=== Wait for rollout ==="
-                        kubectl rollout status \
-                            deployment/jenkins-k8s-demo \
-                            -n default \
-                            --timeout=180s
+                                echo "=== Record deployment cause ==="
+                                kubectl annotate deployment jenkins-k8s-demo \
+                                    kubernetes.io/change-cause="\$CHANGE_CAUSE" \
+                                    -n default \
+                                    --overwrite
 
-                        echo "=== Verify deployed image ==="
-                        ACTUAL_IMAGE=$(kubectl get deployment jenkins-k8s-demo \
-                            -n default \
-                            -o jsonpath='{.spec.template.spec.containers[?(@.name=="nginx")].image}')
+                                echo "=== Update Deployment image ==="
+                                kubectl set image \
+                                    deployment/jenkins-k8s-demo \
+                                    nginx="${newImage}" \
+                                    -n default
 
-                        echo "Actual image: $ACTUAL_IMAGE"
+                                echo "=== Wait for rollout ==="
+                                kubectl rollout status \
+                                    deployment/jenkins-k8s-demo \
+                                    -n default \
+                                    --timeout=180s
 
-                        if [ "$ACTUAL_IMAGE" != "$IMAGE" ]; then
-                            echo "ERROR: Deployed image does not match the expected image."
-                            exit 1
-                        fi
+                                echo "=== Verify deployed image ==="
+                                ACTUAL_IMAGE=\$(kubectl get deployment jenkins-k8s-demo \
+                                    -n default \
+                                    -o jsonpath='{.spec.template.spec.containers[?(@.name=="nginx")].image}')
 
-                        echo "Deployment completed successfully."
-                    '''
+                                echo "Actual image: \$ACTUAL_IMAGE"
+
+                                if [ "\$ACTUAL_IMAGE" != "${newImage}" ]; then
+                                    echo "ERROR: Deployed image does not match expected image."
+                                    exit 1
+                                fi
+
+                                echo "=== HTTP Smoke Test ==="
+                                URL="http://jenkins-k8s-temo.default.svc.cluster.local/"
+                                HTTP_BODY=\$(curl -fsS --connect-timeout 5 --max-time 15 "\$URL")
+
+                                printf '%s\\n' "\$HTTP_BODY"
+
+                                if ! printf '%s\\n' "\$HTTP_BODY" | grep -q 'Hello from Jenkins CI!'; then
+                                    echo "ERROR: Expected page content was not found."
+                                    exit 1
+                                fi
+
+                                echo "Deployment and HTTP smoke test passed."
+                            """
+
+                        } catch (err) {
+                            // 3. 发布失败，尝试回滚
+                            echo "ERROR: Deployment or smoke test failed."
+                            echo "Attempting Kubernetes rollout undo..."
+
+                            try {
+                                sh '''
+                                    set -eu
+
+                                    echo "=== Roll back Deployment ==="
+                                    kubectl rollout undo \
+                                        deployment/jenkins-k8s-demo \
+                                        -n default
+
+                                    echo "=== Wait for rollback ==="
+                                    kubectl rollout status \
+                                        deployment/jenkins-k8s-demo \
+                                        -n default \
+                                        --timeout=180s
+
+                                    echo "=== Check image after rollback ==="
+                                    kubectl get deployment jenkins-k8s-demo \
+                                        -n default \
+                                        -o jsonpath='{.spec.template.spec.containers[?(@.name=="nginx")].image}{"\\n"}'
+
+                                    echo "=== HTTP check after rollback ==="
+                                    URL="http://jenkins-k8s-temo.default.svc.cluster.local/"
+                                    HTTP_BODY=$(curl -fsS --connect-timeout 5 --max-time 15 "$URL")
+
+                                    printf '%s\\n' "$HTTP_BODY"
+
+                                    if ! printf '%s\\n' "$HTTP_BODY" | grep -q 'Hello from Jenkins CI!'; then
+                                        echo "ERROR: Application check after rollback failed."
+                                        exit 1
+                                    fi
+                                '''
+
+                                echo "Rollback completed and HTTP check passed."
+
+                            } catch (rollbackErr) {
+                                echo "CRITICAL: Automatic rollback or its verification failed."
+                                echo "Rollback error: ${rollbackErr}"
+                            }
+
+                            // 4. 即使回滚成功，也保留原始发布失败状态
+                            throw err
+                        }
+                    }
                 }
             }
-            }
+        }
+
 
 
     }
