@@ -3,6 +3,10 @@ pipeline {
         label 'jenkins-agent'
     }
 
+    options {
+        disableConcurrentBuilds()
+    }
+
     stages {
         stage('Check Image Build Tools') {
             steps {
