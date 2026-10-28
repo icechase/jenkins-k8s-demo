@@ -182,10 +182,7 @@ stage('Deploy to Kubernetes') {
                         error('Cannot determine previous image; aborting deployment')
                     }
 
-                    def newImage =
-                        "
-                        ${env.IMAGE_REPOSITORY}:${env.BUILD_NUMBER}"
-
+                    def newImage = "${env.IMAGE_REPOSITORY}:${env.BUILD_NUMBER}"
                     echo "Previous image: ${previousImage}"
                     echo "New image: ${newImage}"
 
