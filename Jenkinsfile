@@ -223,11 +223,11 @@ stage('Deploy to Kubernetes') {
                             sh """
                                 set -eu
 
-                                kubectl set image deployment/jenkins-k8s-demo \
-                                  -n default nginx=${previousImage}
+                                kubectl set image deployment/${env.K8S_DEPLOYMENT} \
+                                  -n ${env.K8S_NAMESPACE} ${env.K8S_CONTAINER}=${previousImage}
 
-                                kubectl rollout status deployment/jenkins-k8s-demo \
-                                  -n default --timeout=180s
+                                kubectl rollout status deployment/${env.K8S_DEPLOYMENT} \
+                                  -n ${env.K8S_NAMESPACE} --timeout=180s
 
                                 ACTUAL_IMAGE=\$(kubectl get deployment jenkins-k8s-demo \
                                   -n default \
