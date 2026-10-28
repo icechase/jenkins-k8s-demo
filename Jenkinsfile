@@ -2,6 +2,19 @@ pipeline {
     agent {
         label 'jenkins-agent'
     }
+    
+    environment {
+        // Image repository
+        IMAGE_REPOSITORY = 'ghcr.io/icechase/jenkins-k8s-demo'
+
+        // kubernetes deployment configuration
+        K8S_NAMESPACE = 'default'
+        K8S_DEPLOYMENT = 'jenkins-k8s-demo'
+        K8S_CONTAINER = 'nginx'
+
+        // Existing Service DNS name; keep the current Service name unchanged
+        K8S_SERVICE_DNS = 'jenkins-k8s-demo.default.svc.cluster.local'
+    }
 
     options {
         disableConcurrentBuilds()
