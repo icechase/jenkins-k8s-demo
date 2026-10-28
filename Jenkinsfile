@@ -198,7 +198,7 @@ stage('Deploy to Kubernetes') {
                                 -n ${env.K8S_NAMESPACE} ${env.K8S_CONTAINER}=${newImage}
 
                                 kubectl rollout status deployment/${env.K8S_DEPLOYMENT} \
-
+                                -n ${env.K8S_NAMESPACE} --timeout=180s
 
                             ACTUAL_IMAGE=\$(kubectl get deployment jenkins-k8s-demo \
                               -n default \
