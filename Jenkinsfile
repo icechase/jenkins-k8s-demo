@@ -183,7 +183,8 @@ stage('Deploy to Kubernetes') {
                     }
 
                     def newImage =
-                        "ghcr.io/icechase/jenkins-k8s-demo:${env.BUILD_NUMBER}"
+                        "
+                        ${env.IMAGE_REPOSITORY}:${env.BUILD_NUMBER}"
 
                     echo "Previous image: ${previousImage}"
                     echo "New image: ${newImage}"
