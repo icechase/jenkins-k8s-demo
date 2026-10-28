@@ -146,7 +146,7 @@ pipeline {
                                 --frontend dockerfile.v0 \
                                 --local context=. \
                                 --local dockerfile=. \
-                                --output "type=image,name=ghcr.io/icechase/jenkins-k8s-demo:${BUILD_NUMBER},push=true"
+                                --output "type=image,name=${IMAGE_REPOSITORY}:${BUILD_NUMBER},push=true"
                 
                             echo "GHCR push command completed successfully."
                         '''
