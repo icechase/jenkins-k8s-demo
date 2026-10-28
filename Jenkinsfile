@@ -189,17 +189,16 @@ stage('Deploy to Kubernetes') {
                     try {
                         sh """
                             set -eu
+                            kubectl annotate deployment ${env.K8S_DEPLOYMENT} \
+                                -n ${env.K8S_NAMESPACE} \
+                                kubernetes.io/change-cause="Jenkins Build #${env.BUILD_NUMBER} deploying ${newImage}" \
+                                --overwrite
 
-                            kubectl annotate deployment jenkins-k8s-demo \
-                              -n default \
-                              kubernetes.io/change-cause="Jenkins Build #${env.BUILD_NUMBER} deploying ${newImage}" \
-                              --overwrite
+                                kubectl set image deployment/${env.K8S_DEPLOYMENT} \
+                                -n ${env.K8S_NAMESPACE} ${env.K8S_CONTAINER}=${newImage}
 
-                            kubectl set image deployment/jenkins-k8s-demo \
-                              -n default nginx=${newImage}
+                                kubectl rollout status deployment/${env.K8S_DEPLOYMENT} \
 
-                            kubectl rollout status deployment/jenkins-k8s-demo \
-                              -n default --timeout=180s
 
                             ACTUAL_IMAGE=\$(kubectl get deployment jenkins-k8s-demo \
                               -n default \
