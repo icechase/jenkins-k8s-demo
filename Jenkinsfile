@@ -262,7 +262,11 @@ stage('Deploy to Kubernetes') {
 
     post {
         always {
-            echo "Pipeline completed, build result: ${currentBuild.currentResult}"
+            echo "Build number: ${currentBuild.number}"  
+            echo "Build result: ${currentBuild.currentResult}"  
+            echo "Build name: ${currentBuild.fullDisplayName}"  
+            echo "Build duration: ${currentBuild.duration} ms"  
+            echo "Build URL: ${currentBuild.absoluteUrl}" 
         }
         success {
             echo "CICD pipeline completed successfully!"
