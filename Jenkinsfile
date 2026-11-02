@@ -216,7 +216,7 @@ stage('Deploy to Kubernetes') {
                               http://${env.K8S_SERVICE_DNS}/ \
                               -o /tmp/smoke-body.txt
 
-                            grep -F 'ROLLBACK_TEST_SHOULD_FAIL' /tmp/smoke-body.txt
+                            grep -F 'Hello from Jenkins CI!' /tmp/smoke-body.txt
                         """
                     } catch (err) {
                         echo "Deployment or smoke test failed: ${err.message}"
@@ -266,4 +266,21 @@ stage('Deploy to Kubernetes') {
 
 
     }
+
+    post {
+        always {
+            echo "Pipeline completed, build result: ${currentBuild.currentResult}"
+        }
+        success {
+            echo "CICD pipeline completed successfully!"
+        }
+
+        failure {
+            echo "CICD pipeline failed!"
+        }
+    }
+
+
+
+
 }
