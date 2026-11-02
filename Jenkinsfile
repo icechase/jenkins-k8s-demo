@@ -153,7 +153,9 @@ pipeline {
                 
                             echo "GHCR push command completed successfully."
                         '''
-                        env.IMAGE_BUILD_PUSH_STATUS = 'SUCCESS'
+                        script {
+                            env.IMAGE_BUILD_PUSH_STATUS = 'SUCCESS'
+                            }
                     }
                     
                 }
