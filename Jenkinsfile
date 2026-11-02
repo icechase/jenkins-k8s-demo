@@ -14,6 +14,9 @@ pipeline {
 
         // Existing Service DNS name; keep the current Service name unchanged
         K8S_SERVICE_DNS = 'jenkins-k8s-demo.default.svc.cluster.local'
+
+        IMAGE_BUILD_PUSH_STATUS = 'NOT_STARTED'
+        DEPLOY_STATUS = 'NOT_STARTED'
     }
 
     options {
@@ -150,6 +153,7 @@ pipeline {
                 
                             echo "GHCR push command completed successfully."
                         '''
+                        IMAGE_BUILD_PUSH_STATUS = 'SUCCESS'
                     }
                 }
 
@@ -267,6 +271,9 @@ stage('Deploy to Kubernetes') {
             echo "Build name: ${currentBuild.fullDisplayName}"  
             echo "Build duration: ${currentBuild.duration} ms"  
             echo "Build URL: ${currentBuild.absoluteUrl}" 
+            echo "Image: ${env.IMAGE_REPOSITORY}:${env.BUILD_NUMBER}"
+            echo "Image build and push status: ${env.IMAGE_BUILD_PUSH_STATUS}"
+
         }
         success {
             echo "CICD pipeline completed successfully!"
