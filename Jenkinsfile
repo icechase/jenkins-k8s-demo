@@ -164,7 +164,10 @@ stage('Deploy to Kubernetes') {
     }
 
     steps {
-        lock(resource: 'jenkins-k8s-demo-deploy') {
+        lock(resource: 'jenkins-k8s-demo-deploy',
+        timeoutForAllocate: 5,
+        timeoutUnit: 'MINUTES'
+        ) {
             echo "Acquired deployment lock: jenkins-k8s-demo-deploy"
 
             container('kubectl') {
