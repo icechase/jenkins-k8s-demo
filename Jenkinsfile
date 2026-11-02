@@ -15,7 +15,7 @@ pipeline {
         // Existing Service DNS name; keep the current Service name unchanged
         K8S_SERVICE_DNS = 'jenkins-k8s-demo.default.svc.cluster.local'
 
-        IMAGE_BUILD_PUSH_STATUS = 'NOT_STARTED'
+
         DEPLOY_STATUS = 'NOT_STARTED'
     }
 
@@ -107,6 +107,9 @@ pipeline {
             }
 
             steps {
+                script {
+                    env.IMAGE_BUILD_PUSH_STATUS = 'NOT_STARTED'
+                        }
                 echo '=== Checkout source on BuildKit agent ==='
 
                 checkout scm
