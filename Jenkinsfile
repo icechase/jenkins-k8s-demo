@@ -200,8 +200,8 @@ stage('Deploy to Kubernetes') {
                                 kubectl rollout status deployment/${env.K8S_DEPLOYMENT} \
                                 -n ${env.K8S_NAMESPACE} --timeout=180s
 
-                            ACTUAL_IMAGE=\$(kubectl get deployment jenkins-k8s-demo \
-                              -n default \
+                            ACTUAL_IMAGE=\$(kubectl get deployment "${env.K8S_DEPLOYMENT}" \
+                              -n "${env.K8S_NAMESPACE}" \
                               -o jsonpath='{.spec.template.spec.containers[?(@.name=="nginx")].image}')
 
                             echo "Actual image: \$ACTUAL_IMAGE"
@@ -210,7 +210,7 @@ stage('Deploy to Kubernetes') {
 
                             echo "=== HTTP Smoke Test ==="
                             curl -fsS --connect-timeout 5 --max-time 15 \
-                              http://jenkins-k8s-temo.default.svc.cluster.local/ \
+                              http://${env.K8S_SERVICE_DNS}/ \
                               -o /tmp/smoke-body.txt
 
                             grep -F 'Hello from Jenkins CI!' /tmp/smoke-body.txt
@@ -238,7 +238,7 @@ stage('Deploy to Kubernetes') {
 
                                 echo "=== HTTP Smoke Test After Rollback ==="
                                 curl -fsS --connect-timeout 5 --max-time 15 \
-                                  http://jenkins-k8s-temo.default.svc.cluster.local/ \
+                                  http://${env.K8S_SERVICE_DNS}/ \
                                   -o /tmp/rollback-body.txt
 
                                 grep -F 'Hello from Jenkins CI!' /tmp/rollback-body.txt
