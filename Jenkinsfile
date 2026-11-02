@@ -229,8 +229,8 @@ stage('Deploy to Kubernetes') {
                                 kubectl rollout status deployment/${env.K8S_DEPLOYMENT} \
                                   -n ${env.K8S_NAMESPACE} --timeout=180s
 
-                                ACTUAL_IMAGE=\$(kubectl get deployment jenkins-k8s-demo \
-                                  -n default \
+                                ACTUAL_IMAGE=\$(kubectl get deployment "${env.K8S_DEPLOYMENT}" \
+                                  -n "${env.K8S_NAMESPACE}" \
                                   -o jsonpath='{.spec.template.spec.containers[?(@.name=="nginx")].image}')
 
                                 echo "Image after rollback: \$ACTUAL_IMAGE"
