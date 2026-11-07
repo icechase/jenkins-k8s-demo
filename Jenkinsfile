@@ -175,7 +175,7 @@ stage('Deploy to Kubernetes') {
 
     steps {
         lock(resource: 'jenkins-k8s-demo-deploy',
-        timeoutForAllocate: 5,
+        timeoutForAllocateResource: 5,
         timeoutUnit: 'MINUTES'
         ) {
             echo "Acquired deployment lock: jenkins-k8s-demo-deploy"
