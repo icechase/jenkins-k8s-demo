@@ -26,6 +26,7 @@ pipeline {
     stages {
         stage('Check Image Build Tools') {
             steps {
+
                 sh '''
                     echo "=== Available tools on normal agent ==="
                     for tool in docker buildctl buildah podman; do
@@ -174,6 +175,10 @@ stage('Deploy to Kubernetes') {
     }
 
     steps {
+        script {
+            env.DEPLOY_STATUS = 'NOT_STARTED'
+        }
+
         lock(resource: 'jenkins-k8s-demo-deploy',
         timeoutForAllocateResource: 5,
         timeoutUnit: 'MINUTES'
@@ -228,6 +233,11 @@ stage('Deploy to Kubernetes') {
 
                             grep -F 'Hello from Jenkins CI!' /tmp/smoke-body.txt
                         """
+                        script {
+                            env.DEPLOY_STATUS = "SUCCESS"
+
+                        }
+
                     } catch (err) {
                         echo "Deployment or smoke test failed: ${err.message}"
                         echo "Restoring previous image: ${previousImage}"
@@ -256,7 +266,12 @@ stage('Deploy to Kubernetes') {
 
                                 grep -F 'Hello from Jenkins CI!' /tmp/rollback-body.txt
                             """
+                            env.DEPLOY_STATUS = 'rolled_back'
+                            echo "Deployment status: ${env.DEPLOY_STATUS}"
+
                         } catch (rollbackErr) {
+                            env.DEPLOY_STATUS = 'rollback_failed'
+                            echo "Deployment status: ${env.DEPLOY_STATUS}"
                             echo "CRITICAL: Rollback or post-rollback verification failed: ${rollbackErr.message}"
                         }
 
@@ -279,6 +294,7 @@ stage('Deploy to Kubernetes') {
             echo "Build URL: ${currentBuild.absoluteUrl}" 
             echo "Image: ${env.IMAGE_REPOSITORY}:${env.BUILD_NUMBER}"
             echo "Image build and push status: ${env.IMAGE_BUILD_PUSH_STATUS}"
+            echo "Deployment status: ${env.DEPLOY_STATUS}"
 
         }
         success {
