@@ -15,8 +15,6 @@ pipeline {
         // Existing Service DNS name; keep the current Service name unchanged
         K8S_SERVICE_DNS = 'jenkins-k8s-demo.default.svc.cluster.local'
 
-
-        DEPLOY_STATUS = 'NOT_STARTED'
     }
 
     options {
@@ -234,8 +232,7 @@ stage('Deploy to Kubernetes') {
                             grep -F 'Hello from Jenkins CI!' /tmp/smoke-body.txt
                         """
                         script {
-                            env.DEPLOY_STATUS ='SUCCESS'
-
+                            env.DEPLOY_STATUS = 'SUCCESS'
                         }
 
                     } catch (err) {
