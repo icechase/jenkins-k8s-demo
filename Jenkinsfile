@@ -229,7 +229,8 @@ stage('Deploy to Kubernetes') {
                               http://${env.K8S_SERVICE_DNS}/ \
                               -o /tmp/smoke-body.txt
 
-                            grep -F 'Hello from Jenkins CI!' /tmp/smoke-body.txt
+                            //grep -F 'Hello from Jenkins CI!' /tmp/smoke-body.txt
+                            grep -F 'this text does not exist' /tmp/smoke-body.txt
                         """
                         //script {
                             env.DEPLOY_STATUS = 'SUCCESS'
