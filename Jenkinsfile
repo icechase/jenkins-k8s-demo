@@ -240,6 +240,11 @@ stage('Deploy to Kubernetes') {
                         echo "Restoring previous image: ${previousImage}"
 
                         try {
+
+                            script {
+                                env.DEPLOY_STATUS = 'rolling_back'
+                                echo "Deployment status: ${env.DEPLOY_STATUS}"
+                            }
                             sh """
                                 set -eu
 
@@ -263,12 +268,16 @@ stage('Deploy to Kubernetes') {
 
                                 grep -F 'Hello from Jenkins CI!' /tmp/rollback-body.txt
                             """
-                            env.DEPLOY_STATUS = 'rolled_back'
-                            echo "Deployment status: ${env.DEPLOY_STATUS}"
+                            script {
+                                env.DEPLOY_STATUS = 'rolled_back'
+                                echo "Deployment status: ${env.DEPLOY_STATUS}"
+                            }
 
                         } catch (rollbackErr) {
-                            env.DEPLOY_STATUS = 'rollback_failed'
-                            echo "Deployment status: ${env.DEPLOY_STATUS}"
+                            script {
+                                env.DEPLOY_STATUS = 'rollback_failed'
+                                echo "Deployment status: ${env.DEPLOY_STATUS}"
+                            }
                             echo "CRITICAL: Rollback or post-rollback verification failed: ${rollbackErr.message}"
                         }
 
