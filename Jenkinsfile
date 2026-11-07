@@ -231,9 +231,9 @@ stage('Deploy to Kubernetes') {
 
                             grep -F 'Hello from Jenkins CI!' /tmp/smoke-body.txt
                         """
-                        script {
+                        //script {
                             env.DEPLOY_STATUS = 'SUCCESS'
-                        }
+                        //}
 
                     } catch (err) {
                         echo "Deployment or smoke test failed: ${err.message}"
@@ -241,10 +241,10 @@ stage('Deploy to Kubernetes') {
 
                         try {
 
-                            script {
+                            //script {
                                 env.DEPLOY_STATUS = 'rolling_back'
                                 echo "Deployment status: ${env.DEPLOY_STATUS}"
-                            }
+                            //}
                             sh """
                                 set -eu
 
@@ -268,16 +268,16 @@ stage('Deploy to Kubernetes') {
 
                                 grep -F 'Hello from Jenkins CI!' /tmp/rollback-body.txt
                             """
-                            script {
+                            //script {
                                 env.DEPLOY_STATUS = 'rolled_back'
                                 echo "Deployment status: ${env.DEPLOY_STATUS}"
-                            }
+                            // }
 
                         } catch (rollbackErr) {
-                            script {
+                          //  script {
                                 env.DEPLOY_STATUS = 'rollback_failed'
                                 echo "Deployment status: ${env.DEPLOY_STATUS}"
-                            }
+                           // }
                             echo "CRITICAL: Rollback or post-rollback verification failed: ${rollbackErr.message}"
                         }
 
