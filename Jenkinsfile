@@ -294,15 +294,20 @@ stage('Deploy to Kubernetes') {
 
     post {
         always {
-            echo "Build number: ${currentBuild.number}"  
-            echo "Build result: ${currentBuild.currentResult}"  
-            echo "Build name: ${currentBuild.fullDisplayName}"  
-            echo "Build duration: ${currentBuild.duration} ms"  
-            echo "Build URL: ${currentBuild.absoluteUrl}" 
-            echo "Image: ${env.IMAGE_REPOSITORY}:${env.BUILD_NUMBER}"
-            echo "Image build and push status: ${env.IMAGE_BUILD_PUSH_STATUS}"
-            echo "Deployment status: ${env.DEPLOY_STATUS}"
+            echo """
+        ========== PIPELINE SUMMARY ==========
 
+        Build Number       : ${currentBuild.number}
+        Build Result       : ${currentBuild.currentResult}
+
+        Image              : ${env.IMAGE_REPOSITORY}:${env.BUILD_NUMBER}
+        Image Build & Push : ${env.IMAGE_BUILD_PUSH_STATUS}
+
+        Deployment         : ${env.K8S_DEPLOYMENT}
+        Deployment Status  : ${env.DEPLOY_STATUS}
+
+        ======================================
+        """
         }
         success {
             echo "CICD pipeline completed successfully!"
