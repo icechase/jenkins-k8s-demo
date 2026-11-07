@@ -234,7 +234,7 @@ stage('Deploy to Kubernetes') {
                             grep -F 'Hello from Jenkins CI!' /tmp/smoke-body.txt
                         """
                         script {
-                            env.DEPLOY_STATUS = "SUCCESS"
+                            env.DEPLOY_STATUS ='SUCCESS'
 
                         }
 
